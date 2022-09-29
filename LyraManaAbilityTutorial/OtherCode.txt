@@ -1,0 +1,15 @@
+// in LyraCharacter.h
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
+	ULyraHealthComponent* HealthComponent;
+
+// in LyraCharacter.cpp constructor
+
+ManaComponent = CreateDefaultSubobject<UManaComponent>(TEXT("ManaComponent"));
+
+// ALyraCharacter::OnAbilitySystemInitialized()
+
+ManaComponent->InitializeWithAbilitySystem(LyraASC);
+
+// ALyraCharacter::OnAbilitySystemUninitialized()
+
+ManaComponent->UninitializeFromAbilitySystem();
