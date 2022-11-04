@@ -1,0 +1,23 @@
+// in ULyraDeveloperSettings class Source/LyraGame/Development/LyraDeveloperSettings.h
+
+UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Config, Category=Cinematics)
+bool bShouldSkipIntroVideo = false;
+
+
+// in ULyraDevelopmentStatics class Source/LyraGame/System/LyraDevelopmentStatics.h
+
+UFUNCTION(BlueprintCallable, Category="Cinematics")
+static bool ShouldSkipOpeningCinematic();
+
+// in Source/LyraGame/System/LyraDevelopmentStatics.cpp
+
+bool ULyraDevelopmentStatics::ShouldSkipOpeningCinematic()
+{
+#if WITH_EDITOR
+	if (GIsEditor)
+	{
+		return GetDefault<ULyraDeveloperSettings>()->bShouldSkipIntroVideo;
+	}
+#endif
+	return false;
+}
