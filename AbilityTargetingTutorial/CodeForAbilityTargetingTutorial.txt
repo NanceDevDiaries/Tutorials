@@ -1,0 +1,17 @@
+in LyraHeroComponent.cpp:
+
+if (ULyraAbilitySystemComponent* LyraASC = PawnExtComp->GetLyraAbilitySystemComponent())
+{
+	LyraIC->BindNativeAction(InputConfig, GameplayTags.InputTag_Confirm, ETriggerEvent::Triggered, LyraASC, &UAbilitySystemComponent::LocalInputConfirm, /*bLogIfNotFound=*/ false);
+	LyraIC->BindNativeAction(InputConfig, GameplayTags.InputTag_Cancel, ETriggerEvent::Triggered, LyraASC, &UAbilitySystemComponent::LocalInputCancel, /*bLogIfNotFound=*/ false);
+}
+			
+in LyraGameplayTags.h:
+	
+FGameplayTag InputTag_Confirm;
+FGameplayTag InputTag_Cancel;
+
+in LyraGameplayTags.cpp:
+
+AddTag(InputTag_Confirm, "InputTag.ConfirmTargeting", "Confirms an ability's targeting.");
+AddTag(InputTag_Cancel, "InputTag.CancelTargeting", "Cancels an ability's targeting.");
