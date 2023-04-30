@@ -1,0 +1,32 @@
+// In LyraPlayerBotController.h:
+
+	// Will skew the control rotation to make sure the AI doesn't have perfect accuracy to "fake" aiming
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = AI, meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	float AimAccuracy = 0.4f;
+
+	virtual void UpdateControlRotation(float DeltaTime, bool bUpdatePawn) override;
+
+// In LyraPlayerBotController.cpp:
+
+void ALyraPlayerBotController::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)
+{
+	Super::UpdateControlRotation(DeltaTime, bUpdatePawn);
+
+	if (AimAccuracy == 1.f) // perfect accuracy from the AI themselves, will still be affected by distance and if they're running/crouching and the accuracy of the weapon itself
+	{
+		return;
+	}
+	const FVector FocalPoint = GetFocalPoint();
+	const bool bHasTarget = FAISystem::IsValidLocation(FocalPoint);
+	if (!bHasTarget)
+	{
+		return;
+	}
+
+	if (FMath::FRand() > AimAccuracy)
+	{
+		// this is a miss, let's make it look good enough so it's not always the same "miss"
+		const float MissedAngle =  FMath::RandRange(5.f, 10.f) * (FMath::RandBool() ? -1.f : 1.f); // they twitched by how much?
+		SetControlRotation(ControlRotation.Vector().RotateAngleAxis(MissedAngle, FVector::UpVector).Rotation());
+	}
+}
