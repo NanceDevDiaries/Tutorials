@@ -1,0 +1,188 @@
+// ==================================
+// in LyraCharacter.h
+// ==================================
+/** @Game-change start **/
+// Unitialize the ability system. Using it for unpossession. 
+UFUNCTION(BlueprintCallable)
+void UnitializeAbilitySystemComp();
+/** @Game-change end **/
+
+// ==================================
+// in LyraCharacter.cpp
+// ==================================
+/** @Game-change start **/
+void ALyraCharacter::UnitializeAbilitySystemComponent()
+{
+	// Uninitialize the ASC if we're still the avatar actor (otherwise another pawn already did it when they became the avatar actor)
+	if (const ULyraAbilitySystemComponent* LyraASC = GetLyraAbilitySystemComponent())
+	{
+		if (LyraASC->GetAvatarActor() == this)
+		{
+			PawnExtComponent->UninitializeAbilitySystem();
+		}
+	}
+}
+/** @Game-change end **/
+
+// ==================================
+// in LyraHeroComponent.h
+// ==================================
+/** @Game-change begin add detail to repossess **/
+// reset the player input after re-possess so the abilities and input work
+UFUNCTION(BlueprintCallable)
+void ResetPlayerInputAfterUnpossess();
+/** @Game-change end add detail to repossess **/
+
+// ==================================
+// in LyraHeroComponent.cpp
+// ==================================
+/** @Game-change begin add detail to repossess **/
+void ULyraHeroComponent::ResetPlayerInputAfterUnpossess()
+{
+	const APawn* Pawn = GetPawn<APawn>();
+	ALyraPlayerState* LyraPS = GetPlayerState<ALyraPlayerState>();
+	if (!ensure(Pawn && LyraPS))
+	{
+		return;
+	}
+
+	if (ULyraPawnExtensionComponent* PawnExtComp = ULyraPawnExtensionComponent::FindPawnExtensionComponent(Pawn))
+	{
+		// set loose gameplay tag so our character knows they were just repossessed
+		LyraPS->GetLyraAbilitySystemComponent()->SetLooseGameplayTagCount(LyraGameplayTags::Status_Repossessed, 1);
+
+		// The player state holds the persistent data for this player (state that persists across deaths and multiple pawns).
+		// The ability system component and attribute sets live on the player state.
+		PawnExtComp->InitializeAbilitySystem(LyraPS->GetLyraAbilitySystemComponent(), LyraPS);
+
+		LyraPS->GetLyraAbilitySystemComponent()->RemoveLooseGameplayTag(LyraGameplayTags::Status_Repossessed, 1);
+	}
+
+	if (GetController<ALyraPlayerController>())
+	{
+		if (Pawn->InputComponent != nullptr)
+		{
+			bReadyToBindInputs = false;
+			InitializePlayerInput(Pawn->InputComponent);
+		}
+	}
+}
+/** @Game-change end add detail to repossess **/
+
+// ==================================
+// in LyraHeroComponent.cpp/.h under GetCharacterPartActors()
+// ==================================
+/** @Game-change start set unpossessed and get character part **/
+	// Finds a previously added character part from the actor that owns this customization component, should be called on the authority only
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Cosmetics)
+	FLyraCharacterPartHandle GetCharacterPart(const FLyraCharacterPart& NewPart) { return CharacterPartList.GetEntry(NewPart); }
+
+	// Ensures the character parts stay spawned even after character unpossesses. Will clear once character is unpossessed
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Cosmetics)
+	void SetKeepPawnCosmeticsOnUnpossessed(bool NewValue) { KeepPawnCosmeticsOnUnpossessed = NewValue; }
+
+	bool GetKeepPawnCosmeticsOnUnpossessed() { return KeepPawnCosmeticsOnUnpossessed; }
+private:
+	bool KeepPawnCosmeticsOnUnpossessed = false;
+
+public:
+	/** @Game-change end set unpossessed and get character part  **/
+
+
+// ==================================
+// in LyraPawnComponent_CharacterParts.h in FLyraCharacterPartList under RemoveEntry()
+// ==================================
+	/* @Game-change start add functionality to get entry */
+	FLyraCharacterPartHandle GetEntry(FLyraCharacterPart Part);
+	/* @Game-change end add functionality to get entry */
+
+// ==================================
+// in LyraPawnComponent_CharacterParts.cpp 
+// ==================================
+/* @Game-change start add functionality to get entry */
+FLyraCharacterPartHandle FLyraCharacterPartList::GetEntry(FLyraCharacterPart Part)
+{
+	FLyraCharacterPartHandle Result;
+	
+	for (auto EntryIt = Entries.CreateIterator(); EntryIt; ++EntryIt)
+	{
+		FLyraAppliedCharacterPartEntry& Entry = *EntryIt;
+		if (Entry.Part.PartClass == Part.PartClass)
+		{
+			Result.PartHandle = Entry.PartHandle;
+			break;
+		}
+	}
+	
+	return Result;
+}
+/* @Game-change end add functionality to get entry */
+
+// ==================================
+// in LyraControllerComponent_CharacterParts.cpp 
+// ==================================
+void ULyraControllerComponent_CharacterParts::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
+{
+	// Remove from the old pawn
+	if (ULyraPawnComponent_CharacterParts* OldCustomizer = OldPawn ? OldPawn->FindComponentByClass<ULyraPawnComponent_CharacterParts>() : nullptr)
+	{		
+		for (FLyraControllerCharacterPartEntry& Entry : CharacterParts)
+		{
+			if (!OldCustomizer->GetKeepPawnCosmeticsOnUnpossessed())
+			{
+				OldCustomizer->RemoveCharacterPart(Entry.Handle);
+			}
+			Entry.Handle.Reset(); // the controller's character parts
+		}
+	}
+	if (OldPawn == nullptr)
+	{
+		for (FLyraControllerCharacterPartEntry& Entry : CharacterParts)
+		{
+			Entry.Handle.Reset();
+		}
+	}	
+	
+	// Apply to the new pawn
+	if (ULyraPawnComponent_CharacterParts* NewCustomizer = NewPawn ? NewPawn->FindComponentByClass<ULyraPawnComponent_CharacterParts>() : nullptr)
+	{
+		for (FLyraControllerCharacterPartEntry& Entry : CharacterParts)
+		{
+			ensure(!Entry.Handle.IsValid());
+				
+			if (Entry.Source != ECharacterPartSource::NaturalSuppressedViaCheat)
+			{
+				if (NewCustomizer->GetKeepPawnCosmeticsOnUnpossessed())
+				{
+					Entry.Handle = NewCustomizer->GetCharacterPart(Entry.Part);
+				}
+				else
+				{
+					Entry.Handle = NewCustomizer->AddCharacterPart(Entry.Part);
+				}
+			}
+		}
+		if (NewCustomizer->GetKeepPawnCosmeticsOnUnpossessed())
+		{
+			NewCustomizer->SetKeepPawnCosmeticsOnUnpossessed(false);
+		}
+	}
+}
+
+// ==================================
+// in LyraGameplayTags.h
+// ==================================
+	/** @Game-change start */
+	// useful for blocking the spawn in GA from triggering
+	LYRAGAME_API	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Repossessed);
+	/** @Game-change end */
+
+// ==================================
+// in LyraGameplayTags.cpp
+// ==================================
+	/** @Game-change start */
+	// useful for blocking the spawn in GA from triggering
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Status_Repossessed, "Status.Repossessed", "Target has repossessed, not died.");
+	/** @Game-change end */
+
+
