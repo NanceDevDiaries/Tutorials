@@ -1,0 +1,37 @@
+// replace RegisterDynamicTab's body in  Source/LyraGame/UI/Common/LyraTabListWidgetBase.cpp
+
+bool ULyraTabListWidgetBase::RegisterDynamicTab(const FLyraTabDescriptor& TabDescriptor)
+{
+	// If it's hidden we just ignore it.
+	if (TabDescriptor.bHidden)
+	{
+		return true;
+	}
+
+	/** @Game-Change start have an invisible content ready to go so that the tabs added in the tab list will work **/
+	UWidget* CreatedTabWidget = nullptr; 
+	
+	PendingTabLabelInfoMap.Add(TabDescriptor.TabId, TabDescriptor);
+	// If the tab content hasn't been created already, create it.
+	if (!TabDescriptor.CreatedTabContentWidget && TabDescriptor.TabContentType)
+	{
+		CreatedTabWidget = CreateWidget<UCommonUserWidget>(GetOwningPlayer(), TabDescriptor.TabContentType);
+		OnTabContentCreatedNative.Broadcast(TabDescriptor.TabId, Cast<UCommonUserWidget>(TabDescriptor.CreatedTabContentWidget));
+		OnTabContentCreated.Broadcast(TabDescriptor.TabId, Cast<UCommonUserWidget>(TabDescriptor.CreatedTabContentWidget));
+	}
+
+	if (CreatedTabWidget)
+	{
+		if (UCommonAnimatedSwitcher* CurrentLinkedSwitcher = GetLinkedSwitcher())
+		{ 
+			// Add the tab content to the newly linked switcher.
+			if (!CurrentLinkedSwitcher->HasChild(CreatedTabWidget))
+			{
+				CurrentLinkedSwitcher->AddChild(CreatedTabWidget);
+			}
+		}
+	}
+	/** @Game-Change end have an invisible content ready to go so that the tabs added in the tab list will work  **/
+	
+	return RegisterTab(TabDescriptor.TabId, TabDescriptor.TabButtonType, CreatedTabWidget);
+}
