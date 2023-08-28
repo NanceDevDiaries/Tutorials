@@ -1,6 +1,11 @@
-# Tutorials
- NanceDevDiaries tutorial files
+# NanceDevDiaries tutorial files
+I share neat tutorials for UE5 and Lyra using blueprints and C++!
 
+Hi, I'm a game dev. I'm sharing what I'm learning as I build up from Lyra to make my own project and find some neat tricks or learnings. This should be a fun adventure! I hope these videos help other fellow game devs and become more enjoyable as I make better ones!
+
+I'll try to make 1 video per month covering some things I learned on my own dev journey that could be useful to the game dev community. 
+
+Game on!!
 
 # YouTube Channel
 https://www.youtube.com/@nancedevdiaries
