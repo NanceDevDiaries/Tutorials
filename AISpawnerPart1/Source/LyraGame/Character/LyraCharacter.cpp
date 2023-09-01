@@ -1,3 +1,5 @@
+#include "LyraPawnData.h" //Add this line to the beginning of the source if it does not exist
+
 void ALyraCharacter::PossessedBy(AController* NewController)
 {
 	const FGenericTeamId OldTeamID = MyTeamID;
