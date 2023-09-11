@@ -15,9 +15,11 @@ https://www.youtube.com/@nancedevdiaries
 YouTube: [Link](https://www.youtube.com/watch?v=shnPpuRGkuw)  
 Folder: /AbilityTargetingTutorial
 
-## AI spawner for Lyra : teams, pawn data and how to make them fight in UE5! NPC spawning Part 1
-YouTube: [Link](https://www.youtube.com/watch?v=lzrZJpSqL2U)  
+## AI spawner for Lyra : teams, pawn data and how to make them fight in UE5!
+YouTube - Part 1: [Link](https://www.youtube.com/watch?v=lzrZJpSqL2U)  
 Folder: /AISpawnerPart1
+YouTube - Part 2: [Link](https://www.youtube.com/watch?v=aGz9Jmapq7I)  
+Folder: /AISpawnerPart2
 
 ## Developer Settings with Lyra tutorial and overview: Accelerate your development testing (UE5)
 YouTube: [Link](https://www.youtube.com/watch?v=UEWU6dlfKiMU)  
