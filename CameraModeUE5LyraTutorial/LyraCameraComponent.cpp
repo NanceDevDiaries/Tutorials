@@ -14,6 +14,7 @@ ULyraCameraComponent::ULyraCameraComponent(const FObjectInitializer& ObjectIniti
 	FieldOfViewOffset = 0.0f;
 }
 
+/** @Game-Change begin**/
 ACameraModeVolume* ULyraCameraComponent::GetCurrentCameraVolume() const
 {
 	return CameraVolume.Get();
@@ -28,6 +29,7 @@ void ULyraCameraComponent::ClearCameraVolume()
 {
 	CameraVolume = nullptr;
 }
+/** @Game-Change end **/
 
 void ULyraCameraComponent::OnRegister()
 {

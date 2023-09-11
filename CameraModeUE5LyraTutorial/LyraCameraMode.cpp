@@ -2,7 +2,7 @@
 
 #include "LyraCameraMode.h"
 
-#include "CameraMode_Volume.h"
+#include "CameraMode_Volume.h" 	// @Game-Change
 #include "LyraPlayerCameraManager.h"
 #include "LyraCameraComponent.h"
 #include "GameFramework/Pawn.h"
@@ -269,6 +269,7 @@ void ULyraCameraModeStack::PushCameraMode(TSubclassOf<ULyraCameraMode> CameraMod
 	}
 
 	ULyraCameraMode* CameraMode = GetCameraModeInstance(CameraModeClass);
+	/** @Game-Change begin **/
 	if (UCameraMode_Volume* VolumeCameraMode = Cast<UCameraMode_Volume>(CameraMode))
 	{
 		if (const auto Volume = CameraMode->GetLyraCameraComponent()->GetCurrentCameraVolume())
@@ -276,6 +277,7 @@ void ULyraCameraModeStack::PushCameraMode(TSubclassOf<ULyraCameraMode> CameraMod
 			VolumeCameraMode->SetVolume(Volume);
 		}
 	}
+	/** @Game-Change end **/
 	check(CameraMode);
 
 	int32 StackSize = CameraModeStack.Num();

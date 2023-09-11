@@ -22,6 +22,7 @@ void ACameraModeVolume::NotifyActorBeginOverlap(AActor* OtherActor)
 		return;
 	}
 
+	/* Required to VolumeStatic */ 
 	if (ULyraCameraComponent* CameraComponent = ULyraCameraComponent::FindCameraComponent(Pawn))
 	{
 		CameraComponent->SetCameraVolume(this);
@@ -41,6 +42,7 @@ void ACameraModeVolume::NotifyActorEndOverlap(AActor* OtherActor)
 		return;
 	}
 
+	/* Required to VolumeStatic */ 
 	if (ULyraCameraComponent* CameraComponent = ULyraCameraComponent::FindCameraComponent(Pawn))
 	{
 		CameraComponent->ClearCameraVolume();

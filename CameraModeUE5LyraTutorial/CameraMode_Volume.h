@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Camera/LyraCameraMode.h"
+#include "CameraModeVolume.h"
 #include "CameraMode_Volume.generated.h"
+
 
 class ACameraModeVolume;
 /**

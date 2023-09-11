@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
+#include "CameraModeVolume.h" //@Game-Change
 #include "LyraCameraComponent.generated.h"
 
-
-class ACameraModeVolume;
+class ACameraModeVolume; //@Game-Change
 class ULyraCameraMode;
 class ULyraCameraModeStack;
 class UCanvas;
@@ -38,6 +38,7 @@ public:
 	// Returns the target actor that the camera is looking at.
 	virtual AActor* GetTargetActor() const { return GetOwner(); }
 
+	/** @Game-Change **/
 	ACameraModeVolume* GetCurrentCameraVolume() const;
 	void SetCameraVolume(ACameraModeVolume* CameraModeVolume);
 	void ClearCameraVolume();
@@ -66,6 +67,7 @@ protected:
 	UPROPERTY()
 	ULyraCameraModeStack* CameraModeStack;
 
+	/** @Game-Change */
 	UPROPERTY(transient)
 	TWeakObjectPtr<ACameraModeVolume> CameraVolume;
 
