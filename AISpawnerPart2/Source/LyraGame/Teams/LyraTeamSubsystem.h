@@ -1,11 +1,11 @@
-	/** Game-Change start support for checking if actor is in a team that's an NPC team. **/
+	/** @Game-Change start support for checking if actor is in a team that's an NPC team. **/
 	UFUNCTION(BlueprintCallable, Category=Teams)
 	bool IsPartOfAnNPCTeam(const UObject* ActorWithTeam) const;
 
 	// Gets if the team is NPC from the perspective of the specified team
 	UFUNCTION(BlueprintCallable, Category=Teams)
 	bool IsTeamNPC(int32 TeamId) const;
-	/** Game-Change end support for checking if actor is in a team that's an NPC team. **/
+	/** @Game-Change end support for checking if actor is in a team that's an NPC team. **/
 
 
 USTRUCT()
