@@ -17,9 +17,11 @@ Folder: /AbilityTargetingTutorial
 
 ## AI spawner for Lyra : teams, pawn data and how to make them fight in UE5!
 YouTube - Part 1: [Link](https://www.youtube.com/watch?v=lzrZJpSqL2U)  
-Folder: /AISpawnerPart1
+Folder: /AISpawnerPart1  
 YouTube - Part 2: [Link](https://www.youtube.com/watch?v=aGz9Jmapq7I)  
-Folder: /AISpawnerPart2
+Folder: /AISpawnerPart2  
+YouTube - Part 2: [Link](https://www.youtube.com/watch?v=uR6y6Tc8dm8)  
+Folder: /AISpawnerPart3
 
 ## Developer Settings with Lyra tutorial and overview: Accelerate your development testing (UE5)
 YouTube: [Link](https://www.youtube.com/watch?v=UEWU6dlfKiMU)  
@@ -49,3 +51,7 @@ Folder: /NerfAI
 ## [UE5 Lyra] allow your players to place actors in-game - actor placement targeting
 YouTube: [Link](https://www.youtube.com/watch?v=YDk5Zoh5u9g)  
 Folder: /ActorPlacementTargeting
+
+## [UE5 Lyra] Unequip Guns : Allow your mannequin to parkour hands-free!
+YouTube: [Link](https://www.youtube.com/watch?v=0bxTfmvJtW0)  
+Folder: /AbilityUnequip
