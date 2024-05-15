@@ -1,0 +1,75 @@
+// paste into LyraGameplayAbility_RangedWeapon.cpp
+ULyraGameplayAbility_RangedWeapon::ULyraGameplayAbility_RangedWeapon(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	SourceBlockedTags.AddTag(TAG_WeaponFireBlocked);
+	SupportsLocalWeaponForwardAiming = true; // @Game-Change auto support forwardAiming when locally controlled and under conditions
+}
+
+void ULyraGameplayAbility_RangedWeapon::PerformLocalTargeting(OUT TArray<FHitResult>& OutHits)
+{
+	APawn* const AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+
+	ULyraRangedWeaponInstance* WeaponData = GetWeaponInstance();
+	if (AvatarPawn && AvatarPawn->IsLocallyControlled() && WeaponData)
+	{
+		// ..
+		InputData.bCanPlayBulletFX = (AvatarPawn->GetNetMode() != NM_DedicatedServer);
+
+		//@TODO: Should do more complicated logic here when the player is close to a wall, etc...
+		// @Game-Change support auto forward aiming for certain conditions
+		auto targetingSource = ELyraAbilityTargetingSource::CameraTowardsFocus;
+		
+		if (SupportsLocalWeaponForwardAiming)
+		{
+			UAbilitySystemComponent* MyAbilityComponent = CurrentActorInfo->AbilitySystemComponent.Get();
+			check(MyAbilityComponent);
+
+			static FGameplayTagContainer AbilitySystemComponentTags;
+			AbilitySystemComponentTags.Reset();
+
+			MyAbilityComponent->GetOwnedGameplayTags(AbilitySystemComponentTags);
+
+			if (!AbilitySystemComponentTags.HasAny(WeaponForwardBlockedTags) && AbilitySystemComponentTags.HasAny(WeaponForwardRequiredTags))
+			{
+				targetingSource = ELyraAbilityTargetingSource::WeaponForward;
+			}
+		}
+		
+		const FTransform TargetTransform = GetTargetingTransform(AvatarPawn, targetingSource);
+		// @Game-Change support end auto forward aiming for certain conditions
+		InputData.AimDir = TargetTransform.GetUnitAxis(EAxis::X);
+		InputData.StartTrace = TargetTransform.GetTranslation();
+
+		//...
+	}
+}
+
+// paste into LyraGameplayAbility_RangedWeapon.h
+class ULyraGameplayAbility_RangedWeapon : public ULyraGameplayAbility_FromEquipment
+{
+	GENERATED_BODY()
+
+public:
+
+	ULyraGameplayAbility_RangedWeapon(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	
+	// @Game-Change start handle auto shooting forward even when locally controlled, ingoring the camera
+	UPROPERTY(EditAnywhere, Category = LocalAiming)
+	bool SupportsLocalWeaponForwardAiming;
+	
+	/** If the ability has any of these tags, the player may be wanting to automatically fire forward, ignoring the camera */
+	UPROPERTY(EditAnywhere, Category = LocalAiming, meta=(EditCondition="SupportsLocalWeaponForwardAiming", EditConditionHides))
+	FGameplayTagContainer WeaponForwardRequiredTags;
+
+	/** If the ability has any of these tags, the player does not want to fire forward, it's use the camera forward */
+	UPROPERTY(EditAnywhere, Category = LocalAiming, meta=(EditCondition="SupportsLocalWeaponForwardAiming", EditConditionHides))
+	FGameplayTagContainer WeaponForwardBlockedTags;
+	// @Game-Change end handle auto shooting forward even when locally controlled, ingoring the camera
+	
+	UFUNCTION(BlueprintCallable, Category="Lyra|Ability")
+	ULyraRangedWeaponInstance* GetWeaponInstance() const;
+
+	//...
+}
