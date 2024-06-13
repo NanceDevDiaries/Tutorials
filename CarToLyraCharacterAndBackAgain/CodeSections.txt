@@ -4,7 +4,7 @@
 /** @Game-change start **/
 // Unitialize the ability system. Using it for unpossession. 
 UFUNCTION(BlueprintCallable)
-void UnitializeAbilitySystemComp();
+void UnitializeAbilitySystemComponent();
 /** @Game-change end **/
 
 // ==================================
