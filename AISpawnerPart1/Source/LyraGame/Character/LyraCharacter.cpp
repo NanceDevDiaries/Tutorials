@@ -6,8 +6,6 @@ void ALyraCharacter::PossessedBy(AController* NewController)
 
 	Super::PossessedBy(NewController);
 
-	PawnExtComponent->HandleControllerChanged();
-
 	/** @Game-Change begin replacement for ALyraPlayerState::PostInitializeComponents() binding to OnExperience ready.
 	** Useful to ensure PawnExtension is ready with PawnData if pawn doesn't want to use default pawn data from the experience **/
 	if (ALyraPlayerState* LyraPlayerState = GetLyraPlayerState())
@@ -30,6 +28,8 @@ void ALyraCharacter::PossessedBy(AController* NewController)
 		}
 	}
 	/** @Game-Change end **/
+
+	PawnExtComponent->HandleControllerChanged();
 	
 	// Grab the current team ID and listen for future changes
 	if (ILyraTeamAgentInterface* ControllerAsTeamProvider = Cast<ILyraTeamAgentInterface>(NewController))
