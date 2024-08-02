@@ -19,17 +19,150 @@ namespace LyraCameraMode_ThirdPerson_Statics
 	static const FName NAME_IgnoreCameraCollision = TEXT("IgnoreCameraCollision");
 }
 
-ULyraCameraMode_ThirdPerson::ULyraCameraMode_ThirdPerson()
+ULyraCameraMode_ThirdPerson::ULyraCameraMode_ThirdPerson(): bUseRuntimeFloatCurves(false),
+                                                            AimLineToDesiredPosBlockedPct(0)
 {
 	TargetOffsetCurve = nullptr;
 
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +00.0f, 0.0f), 1.00f, 1.00f, 14.f, 0));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +16.0f, 0.0f), 0.75f, 0.75f, 00.f, 3));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, -16.0f, 0.0f), 0.75f, 0.75f, 00.f, 3));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +32.0f, 0.0f), 0.50f, 0.50f, 00.f, 5));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, -32.0f, 0.0f), 0.50f, 0.50f, 00.f, 5));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(+20.0f, +00.0f, 0.0f), 1.00f, 1.00f, 00.f, 4));
-	PenetrationAvoidanceFeelers.Add(FLyraPenetrationAvoidanceFeeler(FRotator(-20.0f, +00.0f, 0.0f), 0.50f, 0.50f, 00.f, 4));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +00.0f, 0.0f), 1.00f, 1.00f, 14.f, 0));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +16.0f, 0.0f), 0.75f, 0.75f, 00.f, 3));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, -16.0f, 0.0f), 0.75f, 0.75f, 00.f, 3));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, +32.0f, 0.0f), 0.50f, 0.50f, 00.f, 5));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+00.0f, -32.0f, 0.0f), 0.50f, 0.50f, 00.f, 5));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(+20.0f, +00.0f, 0.0f), 1.00f, 1.00f, 00.f, 4));
+	PenetrationAvoidanceFeelers.Add(
+		FLyraPenetrationAvoidanceFeeler(FRotator(-20.0f, +00.0f, 0.0f), 0.50f, 0.50f, 00.f, 4));
+
+	// @Game-Change initialize new members
+	bEnableCameraLag = false;
+	bEnableCameraRotationLag = false;
+	bDrawDebugLagMarkers = false;
+	bUseCameraLagSubstepping = false;
+	CameraLagSpeed = 10.f;
+	CameraRotationLagSpeed = 10.f;
+	CameraLagMaxTimeStep = 1.f / 60.f;
+	CameraLagMaxDistance = 0.f;
+}
+
+// @Game-Change initialize previous desired Rot and Loc, avoids lerping from previous camera transforms or Zero transform
+void ULyraCameraMode_ThirdPerson::OnActivation()
+{
+	Super::OnActivation();
+
+	PreviousDesiredRot = GetPivotRotation();
+	PreviousDesiredLoc = GetPivotLocation();
+}
+
+void ULyraCameraMode_ThirdPerson::ApplyCameraLag(const float DeltaTime, const FVector& PivotLocation, FRotator& DesiredRot, FVector& DesiredLoc)
+{
+	if(bEnableCameraRotationLag)
+	{
+		if (bUseCameraLagSubstepping && DeltaTime > CameraLagMaxTimeStep && CameraRotationLagSpeed > 0.f)
+		{
+			const FRotator LerpRotationStep = (DesiredRot - PreviousDesiredRot).GetNormalized() * (1.f / DeltaTime);
+			FRotator LerpTarget = PreviousDesiredRot;
+			float RemainingTime = DeltaTime;
+			while (RemainingTime > UE_KINDA_SMALL_NUMBER)
+			{
+				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
+				LerpTarget += LerpRotationStep * LerpAmount;
+				RemainingTime -= LerpAmount;
+
+				// NOTE: Calculated Pitch and Yaw separately to not get any unwanted roll rotation.
+				DesiredRot.Pitch = FRotator(FMath::QInterpTo(FQuat(FRotator(PreviousDesiredRot.Pitch, 0, 0)), FQuat(FRotator(LerpTarget.Pitch, 0, 0)), DeltaTime, CameraRotationLagSpeed)).Pitch;
+				DesiredRot.Yaw = FRotator(FMath::QInterpTo(FQuat(FRotator(0, PreviousDesiredRot.Yaw, 0)), FQuat(FRotator(0, LerpTarget.Yaw, 0)), DeltaTime, CameraRotationLagSpeed)).Yaw;
+				PreviousDesiredRot = DesiredRot;
+			}
+		}
+		else
+		{
+			// NOTE: Calculated Pitch and Yaw separately to not get any unwanted roll rotation.
+			DesiredRot.Pitch = FRotator(FMath::QInterpTo(FQuat(FRotator(PreviousDesiredRot.Pitch, 0, 0)), FQuat(FRotator(DesiredRot.Pitch, 0, 0)), DeltaTime, CameraRotationLagSpeed)).Pitch;
+			DesiredRot.Yaw = FRotator(FMath::QInterpTo(FQuat(FRotator(0, PreviousDesiredRot.Yaw, 0)), FQuat(FRotator(0, DesiredRot.Yaw, 0)), DeltaTime, CameraRotationLagSpeed)).Yaw;
+		}
+		//View.ControlRotation = DesiredRot; //This might help smooth the rotation if we're not aligning the pawn rotation to the control rotation.
+		PreviousDesiredRot = DesiredRot;
+	}
+	
+	if (bEnableCameraLag)
+	{
+		if (bUseCameraLagSubstepping && DeltaTime > CameraLagMaxTimeStep && CameraLagSpeed > 0.f)
+		{
+			const FVector ArmMovementStep = (DesiredLoc - PreviousDesiredLoc) * (1.f / DeltaTime);
+			FVector LerpTarget = PreviousDesiredLoc;
+
+			float RemainingTime = DeltaTime;
+			while (RemainingTime > UE_KINDA_SMALL_NUMBER)
+			{
+				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
+				LerpTarget += ArmMovementStep * LerpAmount;
+				RemainingTime -= LerpAmount;
+
+				DesiredLoc = FMath::VInterpTo(PreviousDesiredLoc, LerpTarget, LerpAmount, CameraLagSpeed);
+				PreviousDesiredLoc = DesiredLoc;
+			}
+		}
+		else
+		{
+			DesiredLoc = FMath::VInterpTo(PreviousDesiredLoc, DesiredLoc, DeltaTime, CameraLagSpeed);
+		}
+
+		// Clamp distance if requested
+		bool bClampedDist = false;
+		if (CameraLagMaxDistance > 0.f)
+		{
+			const FVector FromOrigin = DesiredLoc - PivotLocation; // PivotLocation instead of Arm location
+			if (FromOrigin.SizeSquared() > FMath::Square(CameraLagMaxDistance))
+			{
+				DesiredLoc = PivotLocation + FromOrigin.GetClampedToMaxSize(CameraLagMaxDistance);
+				bClampedDist = true;
+			}
+		}		
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		if (bDrawDebugLagMarkers)
+		{
+			DrawDebugSphere(GetWorld(), PivotLocation, 5.f, 8, FColor::Green);
+			DrawDebugSphere(GetWorld(), DesiredLoc, 5.f, 8, FColor::Yellow);
+
+			const FVector ToOrigin = PivotLocation - DesiredLoc;
+			DrawDebugDirectionalArrow(GetWorld(), DesiredLoc, DesiredLoc + ToOrigin * 0.5f, 7.5f, bClampedDist ? FColor::Red : FColor::Green);
+			DrawDebugDirectionalArrow(GetWorld(), DesiredLoc + ToOrigin * 0.5f, PivotLocation,  7.5f, bClampedDist ? FColor::Red : FColor::Green);
+		}
+#endif
+		PreviousDesiredLoc = DesiredLoc;
+	}
+}
+
+void ULyraCameraMode_ThirdPerson::ApplyTargetOffsetFromRotation(const FRotator& DesiredRot, FVector& DesiredLoc) const
+{
+	// Apply third person offset using pitch. @Game-Change update from pivot rotation/location to desired rot/loc
+	if (!bUseRuntimeFloatCurves)
+	{
+		if (TargetOffsetCurve)
+		{
+			const FVector TargetOffset = TargetOffsetCurve->GetVectorValue(DesiredRot.Pitch);
+			DesiredLoc -= DesiredRot.Vector() * -TargetOffset.X;
+			DesiredLoc += FRotationMatrix(DesiredRot).TransformVector(FVector(0, TargetOffset.Y, TargetOffset.Z));
+		}
+	}
+	else
+	{
+		FVector TargetOffset;
+		
+		TargetOffset.X = TargetOffsetX.GetRichCurveConst()->Eval(DesiredRot.Pitch);
+		TargetOffset.Y = TargetOffsetY.GetRichCurveConst()->Eval(DesiredRot.Pitch);
+		TargetOffset.Z = TargetOffsetZ.GetRichCurveConst()->Eval(DesiredRot.Pitch);
+
+		DesiredLoc -= DesiredRot.Vector() * -TargetOffset.X;
+		DesiredLoc += FRotationMatrix(DesiredRot).TransformVector(FVector(0, TargetOffset.Y, TargetOffset.Z));
+	}
 }
 
 void ULyraCameraMode_ThirdPerson::UpdateView(float DeltaTime)
@@ -37,7 +170,7 @@ void ULyraCameraMode_ThirdPerson::UpdateView(float DeltaTime)
 	UpdateForTarget(DeltaTime);
 	UpdateCrouchOffset(DeltaTime);
 
-	FVector PivotLocation = GetPivotLocation() + CurrentCrouchOffset;
+	const FVector PivotLocation = GetPivotLocation() + CurrentCrouchOffset;
 	FRotator PivotRotation = GetPivotRotation();
 
 	PivotRotation.Pitch = FMath::ClampAngle(PivotRotation.Pitch, ViewPitchMin, ViewPitchMax);
@@ -47,25 +180,18 @@ void ULyraCameraMode_ThirdPerson::UpdateView(float DeltaTime)
 	View.ControlRotation = View.Rotation;
 	View.FieldOfView = FieldOfView;
 
-	// Apply third person offset using pitch.
-	if (!bUseRuntimeFloatCurves)
-	{
-		if (TargetOffsetCurve)
-		{
-			const FVector TargetOffset = TargetOffsetCurve->GetVectorValue(PivotRotation.Pitch);
-			View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset);
-		}
-	}
-	else
-	{
-		FVector TargetOffset(0.0f);
+	// @Game-Change start add rotation and location lag
+	FRotator DesiredRot = PivotRotation;
+	// We lag the target, not the actual camera position, so rotating the camera around does not have lag
+	FVector DesiredLoc = PivotLocation;
+	
+	ApplyCameraLag(DeltaTime, PivotLocation, DesiredRot, DesiredLoc);
+	View.Rotation = DesiredRot;
+	
+	ApplyTargetOffsetFromRotation(DesiredRot, DesiredLoc);
+	View.Location = DesiredLoc;
 
-		TargetOffset.X = TargetOffsetX.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-		TargetOffset.Y = TargetOffsetY.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-		TargetOffset.Z = TargetOffsetZ.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-
-		View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset);
-	}
+	// @Game-Change end add rotation and location lag
 
 	// Adjust final desired camera location to prevent any penetration
 	UpdatePreventPenetration(DeltaTime);
